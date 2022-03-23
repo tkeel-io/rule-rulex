@@ -1,0 +1,23 @@
+# This is a TOML document. Boom
+
+[Base]
+    ProfPathPrefix= "debug"
+    LogLevel= "info"
+    ProfEnable= true
+    TracerEnable= true
+    WhiteList= [""]
+    Endpoints=[":0"]
+
+[Discovery]
+    Endpoints = ["127.0.0.1:2379"]
+
+[RPCClient]
+	Dial      = "2s"
+	Timeout   = "2s"
+
+[Slot]
+    SlotNum   = 1
+
+
+
+
