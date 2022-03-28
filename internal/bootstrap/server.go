@@ -23,22 +23,23 @@ import (
 	"strings"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
+	"github.com/pkg/errors"
+	"github.com/tkeel-io/rule-rulex/internal/conf"
+	"github.com/tkeel-io/rule-rulex/internal/endpoint/rulex"
+	xmetrics "github.com/tkeel-io/rule-rulex/internal/metrices/prometheus"
+	"github.com/tkeel-io/rule-rulex/internal/server"
+	"github.com/tkeel-io/rule-rulex/internal/types"
+	"github.com/tkeel-io/rule-rulex/internal/utils"
 	"github.com/tkeel-io/rule-util/metadata/v1error"
 	"github.com/tkeel-io/rule-util/pkg/log"
 	logf "github.com/tkeel-io/rule-util/pkg/logfield"
 	"github.com/tkeel-io/rule-util/pkg/registry"
-	"github.com/tkeel-io/rule-rulex/internal/conf"
-	"github.com/tkeel-io/rule-rulex/internal/endpoint/rulex"
-	"github.com/tkeel-io/rule-rulex/internal/server"
-	"github.com/tkeel-io/rule-rulex/internal/types"
-	"github.com/tkeel-io/rule-rulex/internal/utils"
 	"github.com/tkeel-io/rule-util/stream/checkpoint"
-	"github.com/opentracing/opentracing-go"
-	"github.com/pkg/errors"
 
+	xgrpc "github.com/tkeel-io/rule-rulex/internal/transport/grpc"
 	pb "github.com/tkeel-io/rule-util/metadata/v1"
 	etcdv3 "github.com/tkeel-io/rule-util/pkg/registry/etcd3"
-	xgrpc "github.com/tkeel-io/rule-rulex/internal/transport/grpc"
 	grpc "google.golang.org/grpc"
 	//_ "git.internal.yunify.com/MDMP2/cloudevents/pkg/cloudevents/transport/kafka22"
 	//_ "git.internal.yunify.com/MDMP2/cloudevents/pkg/cloudevents/transport/qmq"
@@ -144,7 +145,7 @@ func (srv *Server) Run() error {
 			srv.errHandler(err)
 		}
 	}()
-	//	go func() { xmetrics.Init(srv.conf) }()
+	go func() { xmetrics.Init(srv.conf) }()
 	checkpoint.InitCoordinator(srv.ctx, 2*time.Second)
 	return srv.routerService.Start(srv.ctx)
 }

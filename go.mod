@@ -26,7 +26,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	github.com/tkeel-io/rule-util v0.0.0-20220323061256-074504b94f0c
+	github.com/tkeel-io/rule-util v0.0.0-20220328140104-48b9cedb7c43
 	github.com/uber-go/atomic v1.4.0
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	github.com/valyala/fastrand v1.0.0
@@ -88,7 +88,7 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.44.0
 
 replace github.com/antlr/antlr4 => github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211221011931-643d94fcab96
 
-// replace github.com/tkeel-io/rule-util => ../../liuzhen/rule-util
+replace github.com/tkeel-io/rule-util => ../rule-util
 
 //replace git.internal.yunify.com/MDMP2/ruleql => ../ruleql
 

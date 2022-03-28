@@ -1,0 +1,31 @@
+# Router config
+# 20200305
+
+
+# Rulex config
+# 20201127
+
+
+[Base]
+    ProfPathPrefix= "debug"
+    LogLevel= "info"
+    ProfEnable= true
+    TracerEnable= true
+    WhiteList= [""]
+    Endpoints=[":0"]
+
+
+[Discovery]
+    endpoints = ["127.0.0.1:2379"]
+
+[Slot]
+    SlotNum   = 1
+
+[Prometheus]
+    zone = "staging"
+    node = "mdmp2"
+    module = "rulex"
+    name = "rulex2"
+    addr = "10.10.18.163"
+    endpoints = ["127.0.0.1:2379"]
+
