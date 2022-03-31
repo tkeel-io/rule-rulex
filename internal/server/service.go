@@ -261,7 +261,11 @@ func Interface2string(in interface{}) (out string) {
 
 func SubscribeID2Topic(subscribeID string) (topic string) {
 
-	topic = strings.Split(subscribeID, "_")[1]
+	itmes := strings.Split(subscribeID, "_")
+	if len(itmes) != 3 {
+		return
+	}
+	topic = fmt.Sprintf("rulex/rule-%s", itmes[1])
 	return
 }
 
@@ -293,6 +297,9 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 						domain = "admin"
 					}
 					topic := SubscribeID2Topic(subID)
+					if topic == "" {
+						return types.ErrDecode
+					}
 					msgData, _ := json.Marshal(kv["properties"])
 					message = xstream.NewMessage()
 					message.SetData(msgData)
