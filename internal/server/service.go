@@ -18,16 +18,14 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
-	metapb "github.com/tkeel-io/rule-util/metadata/v1"
-	"github.com/tkeel-io/rule-util/metadata/v1error"
-	"github.com/tkeel-io/rule-util/pkg/log"
-	logf "github.com/tkeel-io/rule-util/pkg/logfield"
-	"github.com/tkeel-io/rule-util/pkg/tracing"
-	xutils "github.com/tkeel-io/rule-util/pkg/utils"
+	"github.com/opentracing/opentracing-go"
+	pb "github.com/tkeel-io/rule-rulex/internal/api/v1"
 	conn "github.com/tkeel-io/rule-rulex/internal/network"
 	"github.com/tkeel-io/rule-rulex/internal/resource"
 	"github.com/tkeel-io/rule-rulex/internal/runtime/rule/stream/functions"
@@ -35,9 +33,13 @@ import (
 	"github.com/tkeel-io/rule-rulex/internal/transport/grpc"
 	"github.com/tkeel-io/rule-rulex/internal/types"
 	"github.com/tkeel-io/rule-rulex/internal/utils"
-	"github.com/tkeel-io/rule-util/stream"
+	metapb "github.com/tkeel-io/rule-util/metadata/v1"
+	"github.com/tkeel-io/rule-util/metadata/v1error"
+	"github.com/tkeel-io/rule-util/pkg/log"
+	logf "github.com/tkeel-io/rule-util/pkg/logfield"
+	"github.com/tkeel-io/rule-util/pkg/tracing"
+	xutils "github.com/tkeel-io/rule-util/pkg/utils"
 	xstream "github.com/tkeel-io/rule-util/stream"
-	"github.com/opentracing/opentracing-go"
 )
 
 type RuleService struct {
@@ -218,7 +220,7 @@ func (s *RuleService) Start(ctx context.Context) error {
 	}()
 
 	for _, source := range s.resourceManager.Sources() {
-		go func(source stream.Source) {
+		go func(source xstream.Source) {
 			ctx := context.Background()
 			if err := source.StartReceiver(ctx, s.handleMessage); err != nil {
 				log.Error("OpenStream",
@@ -247,6 +249,22 @@ func (s *RuleService) Destroy(ctx context.Context) {
 	s.Stop(ctx)
 }
 
+func Interface2string(in interface{}) (out string) {
+	switch inString := in.(type) {
+	case string:
+		out = inString
+	default:
+		out = ""
+	}
+	return
+}
+
+func SubscribeID2Topic(subscribeID string) (topic string) {
+
+	topic = strings.Split(subscribeID, "_")[1]
+	return
+}
+
 func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 	//	metrics.MsgMetrics.Mark(1)
 	//	msgCtx := xmetrics.NewMsgContext()
@@ -254,14 +272,39 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 
 	span, ctx := tracing.AddSpan(ctx, "Handle Message")
 	defer span.Finish()
+	// TODO
 
-	message, ok := m.(stream.PublishMessage)
+	message, ok := m.(xstream.PublishMessage)
 	//	xmetrics.MsgReceived(len(message.Data()))
 	if !ok {
 		s.logger.For(ctx).Error("message decode fail",
 			logf.Any("message", m),
 			logf.Any("message type", reflect.TypeOf(m)))
-		return types.ErrDecode
+
+		if dataByte, ok := m.([]byte); ok {
+
+			msg := &pb.TopicEventRequest{}
+			if err := json.Unmarshal(dataByte, msg); err == nil {
+				switch kv := msg.Data.AsInterface().(type) {
+				case map[string]interface{}:
+					subID := Interface2string(kv["subscribe_id"])
+					domain := Interface2string(kv["owner"])
+					if domain == "" {
+						domain = "admin"
+					}
+					topic := SubscribeID2Topic(subID)
+					msgData, _ := json.Marshal(kv["properties"])
+					message = xstream.NewMessage()
+					message.SetData(msgData)
+					message.SetDomain(domain)
+					message.SetTopic(topic)
+				}
+
+			}
+		} else {
+			return types.ErrDecode
+		}
+
 	}
 
 	span.SetTag("message.entity", message.Entity())
@@ -318,7 +361,7 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 	//	metrics.Inc(metrics.MetricName(userID, entityID, metrics.MtcMessageUp))
 	//}
 
-	vCtx := functions.NewMessageContext(message.(stream.PublishMessage))
+	vCtx := functions.NewMessageContext(message.(xstream.PublishMessage))
 	globalSlot := s.resourceManager.Slot("*")
 	globalSlot.Invoke(ctx, vCtx, message)
 	userSlot := s.resourceManager.Slot(userID)
@@ -326,10 +369,10 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 	return nil
 }
 
-func (s *RuleService) Debug(ctx context.Context, message stream.PublishMessage) {
+func (s *RuleService) Debug(ctx context.Context, message xstream.PublishMessage) {
 	userID := message.Domain()
 	if message.Topic() == "/mdmp/debug/tree" {
-		func(message stream.Message) {
+		func(message xstream.Message) {
 			globalSlot := s.resourceManager.Slot("*")
 			tree := "global:\n" + globalSlot.Tree().String()
 			message.SetData([]byte(tree))
@@ -345,7 +388,7 @@ func (s *RuleService) Debug(ctx context.Context, message stream.PublishMessage) 
 				logf.Any("message", message),
 			)
 		}(message.Copy())
-		func(message stream.Message) {
+		func(message xstream.Message) {
 			userSlot := s.resourceManager.Slot(userID)
 			tree := userID + ":\n" + userSlot.Tree().String()
 			message.SetData([]byte(tree))

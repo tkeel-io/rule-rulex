@@ -9,12 +9,13 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/go-kit/kit v0.9.0
 	github.com/go-redis/redis v6.15.2+incompatible
-	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofrs/uuid v3.3.0+incompatible
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/google/uuid v1.1.2
+	github.com/golang/glog v1.0.0
+	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/lib/pq v1.2.0
 	github.com/opentracing/opentracing-go v1.2.0
@@ -30,10 +31,12 @@ require (
 	github.com/uber-go/atomic v1.4.0
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	github.com/valyala/fastrand v1.0.0
-	go.uber.org/atomic v1.7.0
+	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
+	google.golang.org/genproto v0.0.0-20220310185008-1973136f34c6
 	google.golang.org/grpc v1.44.0
+	google.golang.org/protobuf v1.27.1
 )
 
 require (
@@ -75,12 +78,10 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.2 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.2 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.2 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
-	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
@@ -88,7 +89,7 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.44.0
 
 replace github.com/antlr/antlr4 => github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20211221011931-643d94fcab96
 
-replace github.com/tkeel-io/rule-util => ../rule-util
+// replace github.com/tkeel-io/rule-util => ../rule-util
 
 //replace git.internal.yunify.com/MDMP2/ruleql => ../ruleql
 
