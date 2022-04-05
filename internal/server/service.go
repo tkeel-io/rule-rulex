@@ -300,7 +300,7 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 					if topic == "" {
 						return types.ErrDecode
 					}
-					msgData, _ := json.Marshal(kv["properties"])
+					msgData, _ := json.Marshal(kv)
 					message = xstream.NewMessage()
 					message.SetData(msgData)
 					message.SetDomain(domain)
