@@ -18,17 +18,18 @@ package kafka
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 
-	v1 "github.com/tkeel-io/rule-util/metadata/v1"
-	"github.com/tkeel-io/rule-util/pkg/log"
-	logf "github.com/tkeel-io/rule-util/pkg/logfield"
+	"github.com/Shopify/sarama"
 	"github.com/tkeel-io/rule-rulex/internal/types"
 	"github.com/tkeel-io/rule-rulex/internal/utils"
 	"github.com/tkeel-io/rule-rulex/pkg/sink"
-	"github.com/Shopify/sarama"
+	v1 "github.com/tkeel-io/rule-util/metadata/v1"
+	"github.com/tkeel-io/rule-util/pkg/log"
+	logf "github.com/tkeel-io/rule-util/pkg/logfield"
 )
 
 type Option struct {
@@ -118,6 +119,9 @@ func (this *kafkaSink) onResponsed() {
 // 1. 发送消息
 // 2. 重试，错误处理
 func (this *kafkaSink) Invoke(ctx types.ActionContent, message types.Message) error {
+	if this.sink == nil {
+		return errors.New("sink is nil")
+	}
 	log.GlobalLogger().For(ctx.Context()).Info("Invoke", logf.Any("messages", string(message.Data())))
 	msg := message.(types.PublishMessage)
 
