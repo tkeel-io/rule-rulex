@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -281,10 +280,11 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 	message, ok := m.(xstream.PublishMessage)
 	//	xmetrics.MsgReceived(len(message.Data()))
 	if !ok {
-		s.logger.For(ctx).Error("message decode fail",
-			logf.Any("message", m),
-			logf.Any("message type", reflect.TypeOf(m)))
-
+		/*
+			s.logger.For(ctx).Error("message decode fail",
+				logf.Any("message", m),
+				logf.Any("message type", reflect.TypeOf(m)))
+		*/
 		if dataByte, ok := m.([]byte); ok {
 
 			msg := &pb.TopicEventRequest{}
@@ -292,6 +292,7 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 				switch kv := msg.Data.AsInterface().(type) {
 				case map[string]interface{}:
 					subID := Interface2string(kv["subscribe_id"])
+					entityID := Interface2string(kv["id"])
 					domain := Interface2string(kv["owner"])
 					if domain == "" {
 						domain = "admin"
@@ -305,6 +306,7 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 					message.SetData(msgData)
 					message.SetDomain(domain)
 					message.SetTopic(topic)
+					message.SetEntity(entityID)
 				}
 
 			}

@@ -17,15 +17,16 @@
 package chronus
 
 import (
+	"sync"
+
 	"github.com/tkeel-io/rule-rulex/internal/types"
 	"github.com/tkeel-io/rule-rulex/pkg/sink"
 	"github.com/tkeel-io/rule-rulex/pkg/sink/utils"
 	"go.uber.org/atomic"
-	"sync"
 )
 
 const (
-	EntityType = "chronus"
+	EntityType = "clickhouse"
 
 	THING_PROPERTY_TYPE_INT32   = "int32"
 	THING_PROPERTY_TYPE_FLOAT32 = "float"

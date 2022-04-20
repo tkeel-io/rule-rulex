@@ -7,10 +7,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/tkeel-io/rule-util/pkg/log"
-	logf "github.com/tkeel-io/rule-util/pkg/logfield"
 	"github.com/tkeel-io/rule-rulex/internal/types"
 	"github.com/tkeel-io/rule-rulex/internal/utils"
+	"github.com/tkeel-io/rule-util/pkg/log"
+	logf "github.com/tkeel-io/rule-util/pkg/logfield"
+	"github.com/tkeel-io/rule-util/ruleql/pkg/ruleql"
 	"go.uber.org/atomic"
 
 	//"github.com/tkeel-io/rule-rulex/internal/utils"
@@ -18,10 +19,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/tkeel-io/rule-rulex/pkg/sink"
 	plugin "github.com/tkeel-io/rule-rulex/pkg/sink/plugin/mysql"
 	xutils "github.com/tkeel-io/rule-rulex/pkg/sink/utils"
-	"github.com/jmoiron/sqlx"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -187,15 +188,15 @@ func (a *mysql) Insert(ctx types.ActionContent, messages []types.Message) (err e
 	for _, message := range messages {
 
 		data := new(execNode)
+		tqlNode := ruleql.NewJSONContext(string(message.Data()))
+
 		utils.Log.Bg().Info("Invoke", logf.Any("messages", string(message.Data())))
-		msgCtx := NewMessageContext(message.(types.PublishMessage))
-		evalCtx := NewContext("", string(message.Data()), msgCtx)
 
 		data.fields = make([]string, 0, len(a.fields))
 		data.args = make([]interface{}, 0, len(a.fields))
 		for _, field := range a.fields {
 			name, v, typ := field.name, field.value, field.typ
-			val := Execute(evalCtx, v)
+			val := xutils.GetValue(tqlNode, v)
 			if err := fillExecNode(val, typ, data, name); err != nil {
 				utils.Log.Bg().Error("fillExecNode failed", logf.Any("error", err))
 				return err
@@ -266,13 +267,13 @@ func fillExecNode(val interface{}, typ string, data *execNode, fieldName string)
 	var err error
 	lowerType := strings.ToLower(typ)
 	switch lowerType {
-	case "tinyint", "smallint", "mediumint", "int", "bigint":
+	case "tinyint", "smallint", "mediumint", "int", "bigint", "int64":
 		val, err = ToInt64(val)
 	case "float":
 		val, err = ToFloat32(val)
 	case "double":
 		val, err = ToFloat64(val)
-	case "char", "varchar", "text", "date", "time", "datetime", "timestamp":
+	case "char", "varchar", "text", "date", "time", "datetime", "timestamp", "string":
 		val, err = ToString(val)
 	default:
 		err = fmt.Errorf("field(%s) type error,want %s,got (%v)", fieldName, typ, val)

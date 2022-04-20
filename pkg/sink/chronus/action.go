@@ -5,17 +5,19 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/tkeel-io/rule-util/pkg/errors"
-	"github.com/tkeel-io/rule-util/pkg/log"
-	"github.com/tkeel-io/rule-util/pkg/logfield"
-	"github.com/tkeel-io/rule-rulex/internal/types"
-	"github.com/tkeel-io/rule-rulex/internal/utils"
-	"github.com/tkeel-io/rule-rulex/pkg/sink"
-	"github.com/jmoiron/sqlx"
-	"go.uber.org/atomic"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/tkeel-io/rule-rulex/internal/types"
+	"github.com/tkeel-io/rule-rulex/internal/utils"
+	"github.com/tkeel-io/rule-rulex/pkg/sink"
+	"github.com/tkeel-io/rule-util/pkg/errors"
+	"github.com/tkeel-io/rule-util/pkg/log"
+	logf "github.com/tkeel-io/rule-util/pkg/logfield"
+	"github.com/tkeel-io/rule-util/ruleql/pkg/ruleql"
+	"go.uber.org/atomic"
 
 	ck "github.com/tkeel-io/rule-rulex/pkg/go-clickhouse"
 	plugin "github.com/tkeel-io/rule-rulex/pkg/sink/plugin/clickhouse"
@@ -197,20 +199,18 @@ func (a *chronus) Insert(ctx types.ActionContent, messages []types.Message) (err
 	)
 	rows := make([]*execNode, 0)
 	for _, message := range messages {
-
 		data := new(execNode)
+		tqlNode := ruleql.NewJSONContext(string(message.Data()))
 
 		//fmt.Println(string(message.Data()))
 		utils.Log.Bg().Info("Invoke", logf.Any("messages", string(message.Data())))
 		//jsonCtx := utils.NewJSONContext(string(message.Data()))
-		msgCtx := NewMessageContext(message.(types.PublishMessage))
-		evalCtx := NewContext("", string(message.Data()), msgCtx)
 
 		data.fields = make([]string, 0, len(a.fields))
 		data.args = make([]interface{}, 0, len(a.fields))
 		for _, field := range a.fields {
 			name, v, typ := field.name, field.value, field.typ
-			val := Execute(evalCtx, v)
+			val := xutils.GetValue(tqlNode, v)
 			if err := fillExecNode(val, typ, data, name); err != nil {
 				return err
 			}

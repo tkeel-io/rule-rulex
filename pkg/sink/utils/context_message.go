@@ -19,15 +19,16 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	logf "github.com/tkeel-io/rule-util/pkg/logfield"
-	"github.com/tkeel-io/rule-util/ruleql/pkg/ruleql"
-	"github.com/tkeel-io/rule-rulex/internal/types"
-	"github.com/tkeel-io/rule-util/stream/utils"
 	"math/big"
 	"math/rand"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/tkeel-io/rule-rulex/internal/types"
+	logf "github.com/tkeel-io/rule-util/pkg/logfield"
+	"github.com/tkeel-io/rule-util/ruleql/pkg/ruleql"
+	"github.com/tkeel-io/rule-util/stream/utils"
 )
 
 type Context = ruleql.Context
@@ -57,8 +58,8 @@ var (
 		message := types.NewMessage()
 		topic := "/sys/xxxxx/deviceId/thing/event/property/post"
 		message.SetTopic(topic)
-        var i int64 = 1579420383073
-        var j int64 = int64(idx*1000)
+		var i int64 = 1579420383073
+		var j int64 = int64(idx * 1000)
 		msgCtx.SetValue("params.Cpu.time", big.NewInt(i+j))
 		msgCtx.SetValue("params.Cpu.value", rand.Float32())
 		msgCtx.SetValue("params.Mem.time", big.NewInt(i+j))
@@ -214,4 +215,8 @@ func toValue(ret Node) interface{} {
 		return string(ret)
 	}
 	return nil
+}
+
+func GetValue(data ruleql.Context, path string) interface{} {
+	return toValue(data.Value(path))
 }
