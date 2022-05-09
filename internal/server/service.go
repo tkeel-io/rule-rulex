@@ -309,11 +309,27 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 					message.SetEntity(entityID)
 				}
 
+			} else {
+				if env := utils.Log.Check(log.ErrorLevel, fmt.Sprintf("handle")); env != nil {
+					env.Write(
+						logf.ByteString("msg data", dataByte),
+						logf.Time("time", time.Now()))
+				}
+				return types.ErrDecode
 			}
+
 		} else {
 			return types.ErrDecode
 		}
 
+	}
+	if message == nil {
+		if env := utils.Log.Check(log.ErrorLevel, fmt.Sprintf("handle")); env != nil {
+			env.Write(
+				logf.Any("msg data", m),
+				logf.Time("time", time.Now()))
+		}
+		return types.ErrDecode
 	}
 
 	span.SetTag("message.entity", message.Entity())
