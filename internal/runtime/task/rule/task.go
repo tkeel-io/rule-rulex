@@ -22,11 +22,6 @@ import (
 	"fmt"
 	"strconv"
 
-	metapb "github.com/tkeel-io/rule-util/metadata/v1"
-	"github.com/tkeel-io/rule-util/pkg/errors"
-	"github.com/tkeel-io/rule-util/pkg/log"
-	logf "github.com/tkeel-io/rule-util/pkg/logfield"
-	"github.com/tkeel-io/rule-util/ruleql/pkg/ruleql"
 	metrics "github.com/tkeel-io/rule-rulex/internal/metrices"
 	xmetrics "github.com/tkeel-io/rule-rulex/internal/metrices/prometheus"
 	"github.com/tkeel-io/rule-rulex/internal/report"
@@ -35,6 +30,11 @@ import (
 	"github.com/tkeel-io/rule-rulex/internal/utils"
 	rulex "github.com/tkeel-io/rule-rulex/pkg/define"
 	"github.com/tkeel-io/rule-rulex/pkg/sink"
+	metapb "github.com/tkeel-io/rule-util/metadata/v1"
+	"github.com/tkeel-io/rule-util/pkg/errors"
+	"github.com/tkeel-io/rule-util/pkg/log"
+	logf "github.com/tkeel-io/rule-util/pkg/logfield"
+	"github.com/tkeel-io/rule-util/ruleql/pkg/ruleql"
 	"github.com/tkeel-io/rule-util/stream"
 	"go.uber.org/atomic"
 )
@@ -78,9 +78,11 @@ func (this *Task) init(ctx context.Context) (err error) {
 func (this *Task) ID() string {
 	return fmt.Sprintf("%s", this.id)
 }
+
 func (this *Task) UserID() string {
 	return fmt.Sprintf("%s", this.userId)
 }
+
 func (this *Task) RefreshTime() int64 {
 	return this.value.RefreshTime
 }
@@ -199,9 +201,10 @@ func (this *Task) invoke(ctx context.Context, state interface{}) error {
 				ErrorMessage: err.Error(),
 			})
 
-			xmetrics.MsgSent(xmetrics.StatusFailure, 0)
-			metrics.Inc(metrics.MetricName(this.userId, this.ruleId, metrics.MtcRuleAction))
-			metrics.Inc(metrics.MetricName(this.userId, this.ruleId, metrics.MtcRuleActionFAIL))
+			//	xmetrics.MsgSent(xmetrics.StatusFailure, 0)
+			xmetrics.GetIns().RuleExecute(this.userId, xmetrics.StatusFailure)
+			//	metrics.Inc(metrics.MetricName(this.userId, this.ruleId, metrics.MtcRuleAction))
+			//	metrics.Inc(metrics.MetricName(this.userId, this.ruleId, metrics.MtcRuleActionFAIL))
 			errCount++
 		} else {
 			if env := utils.Log.Check(log.DebugLevel, fmt.Sprintf("3.2 action invoke")); env != nil {
@@ -209,9 +212,10 @@ func (this *Task) invoke(ctx context.Context, state interface{}) error {
 					logf.String("topic", msg.Topic()))
 			}
 
-			xmetrics.MsgSent(xmetrics.StatusSuccess, len(msg.Data()))
-			metrics.Inc(metrics.MetricName(this.userId, this.ruleId, metrics.MtcRuleAction))
-			metrics.Inc(metrics.MetricName(this.userId, this.ruleId, metrics.MtcRuleActionOK))
+			//	xmetrics.MsgSent(xmetrics.StatusSuccess, len(msg.Data()))
+			xmetrics.GetIns().RuleExecute(this.userId, xmetrics.StatusSuccess)
+			//	metrics.Inc(metrics.MetricName(this.userId, this.ruleId, metrics.MtcRuleAction))
+			//	metrics.Inc(metrics.MetricName(this.userId, this.ruleId, metrics.MtcRuleActionOK))
 			okCount++
 		}
 	}
@@ -271,7 +275,7 @@ func (this *Task) initAction(ctx context.Context) (err error) {
 	errActions := make(map[string]*ActionTask)
 	for idx, value := range this.value.Actions {
 		report.ActionStatus(ctx, this, value, rulex.RuleActionStart)
-		ac, err := NewAction(ctx, value.Type, value) //actionBuilder
+		ac, err := NewAction(ctx, value.Type, value) // actionBuilder
 		if err != nil {
 			utils.Log.For(ctx).Error("open stream error",
 				logf.Error(err))

@@ -24,6 +24,10 @@ func (this *RulexMetrics) ResourceSync(resource string, num, size int) {
 	this.resourceSyncSent.WithLabelValues(resource).Add(float64(size))
 }
 
+func (rule *RulexMetrics) RuleExecute(tenantId, status string) {
+	rule.ruleExecute.WithLabelValues(tenantId, status).Inc()
+}
+
 //----------------Collect Interfaces---------------
 func MsgReceived(num int) {
 	rulexMetric.MsgTrace(MsgInput, StatusAll)
@@ -35,7 +39,7 @@ func MsgRecvFail() {
 }
 
 func MsgSent(status string, num int) {
-	//status = {"success" | "failure"}
+	// status = {"success" | "failure"}
 	rulexMetric.MsgTrace(MsgOutput, status)
 	rulexMetric.MsgSentRate(num)
 }
