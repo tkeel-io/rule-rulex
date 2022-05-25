@@ -1,13 +1,18 @@
 package prometheus
 
 var (
-	//resource sync labels
+	// resource sync labels
 	resSyncLabels = []string{
-		"resource", //资源类型
+		"resource", // 资源类型
 	}
 	inoutLabels = []string{
-		"inout",  //标识message是输入还是输出
-		"status", //标识消息的处理状态
+		"inout",  // 标识message是输入还是输出
+		"status", // 标识消息的处理状态
+	}
+
+	ruleExecuteLabels = []string{
+		"tenant_id", // 租户id
+		"status",    // 规则执行状态
 	}
 )
 

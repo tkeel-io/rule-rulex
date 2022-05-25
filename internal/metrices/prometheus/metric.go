@@ -1,16 +1,23 @@
 package prometheus
 
 import (
+	"net"
+	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/tkeel-io/rule-rulex/internal/conf"
+	xutils "github.com/tkeel-io/rule-rulex/internal/utils"
 	logf "github.com/tkeel-io/rule-util/pkg/logfield"
 	xmetrics "github.com/tkeel-io/rule-util/pkg/metrics/prometheus"
 	"github.com/tkeel-io/rule-util/pkg/metrics/prometheus/option"
-	"github.com/tkeel-io/rule-rulex/internal/conf"
-	xutils "github.com/tkeel-io/rule-rulex/internal/utils"
-	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 )
 
-var rulexMetric *RulexMetrics
-var logger = xutils.Logger
+var (
+	rulexMetric *RulexMetrics
+	logger      = xutils.Logger
+)
 
 type RulexMetrics struct {
 	name   string
@@ -19,28 +26,29 @@ type RulexMetrics struct {
 	module string
 	reg    *prometheus.Registry
 
-	//消息的输入输出统计
+	// 消息的输入输出统计
 	msgInOut *prometheus.GaugeVec
-	//消息处理延迟
+	// 消息处理延迟
 	msgDelay *prometheus.HistogramVec
-	//消息延迟处理时间分布
+	// 消息延迟处理时间分布
 	msgDelaySum *prometheus.SummaryVec
-	//接受消息的速率（B/s）
+	// 接受消息的速率（B/s）
 	msgReceivedRate prometheus.Gauge
-	//消息发送的速率
+	// 消息发送的速率
 	msgSentRate prometheus.Gauge
-	//资源（rule,route,subscription）同步速度（单位：个）
+	// 资源（rule,route,subscription）同步速度（单位：个）
 	resourceSync *prometheus.GaugeVec
-	//资源（rule,route,subscription）同步速度（单位：byte）
+	// 资源（rule,route,subscription）同步速度（单位：byte）
 	resourceSyncSent *prometheus.GaugeVec
+	// 规则执行次数
+	ruleExecute *prometheus.GaugeVec
 }
 
 func GetIns() *RulexMetrics {
 	return rulexMetric
 }
 
-func (this *RulexMetrics) register() {
-
+func (this *RulexMetrics) register1() {
 	labels := option.WithBindLabels(
 		option.NewBaseBindLabels(
 			this.name,
@@ -59,18 +67,34 @@ func (this *RulexMetrics) register() {
 	xmetrics.Setup(this.reg, opts...).Register(prometheus.NewGoCollector())
 }
 
-func (this *RulexMetrics) exposed(c *conf.Config) {
-	if err := xmetrics.ExposedMetrics(this.reg, &xmetrics.ExposedConf{
-		Addr: c.Prometheus.Address(),
-		Etcd: c.Prometheus.Endpoints,
-		KV:   NewrulexFmt(this.name),
-	}); nil != err {
-		if c.Prometheus.ExitFlag {
-			panic(err)
-		} else {
-			logger.Bg().Error("start prometheus exporter failure.", logf.Any("args", c))
-		}
+func (rule *RulexMetrics) exposed(c *conf.Config) error {
+	var (
+		err      error
+		port     string
+		listener net.Listener
+	)
+
+	port = "31236"
+	if listener, err = net.Listen("tcp", ":"+port); nil != err {
+		logger.Bg().Error("listen metrics failed. error: %v", logf.Error(err))
+		return err
 	}
+
+	servMux := http.NewServeMux()
+	servMux.HandleFunc("/metrics",
+		func(w http.ResponseWriter, r *http.Request) {
+			promhttp.HandlerFor(rule.reg,
+				promhttp.HandlerOpts{}).ServeHTTP(w, r)
+		})
+
+	logger.Bg().Info("start prometheus http handler.",
+		zap.String("ip", "0.0.0.0"),
+		zap.String("port", port))
+
+	if err = http.Serve(listener, servMux); nil != err {
+		logger.Bg().Fatal("start exporter failure.", logf.Error(err))
+	}
+	return err
 }
 
 func Init(c *conf.Config) {
@@ -106,7 +130,7 @@ func Init(c *conf.Config) {
 			Subsystem: "msg",
 			Name:      "delay",
 			Help:      "message delay histogram.",
-			Buckets:   []float64{5, 10, 20, 50, 100, 200, 300, 500, 1000, 1500, 3000}, //延迟以ms为单位
+			Buckets:   []float64{5, 10, 20, 50, 100, 200, 300, 500, 1000, 1500, 3000}, // 延迟以ms为单位
 		}, []string{"status"}),
 
 		msgDelaySum: prometheus.NewSummaryVec(prometheus.SummaryOpts{
@@ -128,10 +152,16 @@ func Init(c *conf.Config) {
 			Name:      "sync_sent",
 			Help:      "count for sync resource(bytes).",
 		}, resSyncLabels),
+
+		ruleExecute: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "rulex",
+			Name:      "rule_execute_num",
+			Help:      "count for rule execute .",
+		}, ruleExecuteLabels),
 	}
 
-	rulexMetric.register()
-
-	//expose
+	rulexMetric.reg = prometheus.NewRegistry()
+	rulexMetric.reg.MustRegister(rulexMetric.ruleExecute)
+	// expose
 	rulexMetric.exposed(c)
 }

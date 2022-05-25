@@ -18,21 +18,21 @@ package runtime
 
 import (
 	"context"
-
-	"github.com/tkeel-io/rule-util/pkg/log"
-	logf "github.com/tkeel-io/rule-util/pkg/logfield"
-	"github.com/tkeel-io/rule-rulex/internal/utils"
-
-	//"github.com/tkeel-io/rule-util/pkg/tracing"
 	"sync"
 
-	"github.com/tkeel-io/rule-util/ruleql/pkg/ruleql"
+	"github.com/tkeel-io/rule-rulex/internal/utils"
+	"github.com/tkeel-io/rule-util/pkg/log"
+	logf "github.com/tkeel-io/rule-util/pkg/logfield"
+
+	//"github.com/tkeel-io/rule-util/pkg/tracing"
+
+	"github.com/google/uuid"
+	"github.com/opentracing/opentracing-go"
 	xmetrics "github.com/tkeel-io/rule-rulex/internal/metrices/prometheus"
 	"github.com/tkeel-io/rule-rulex/internal/types"
 	"github.com/tkeel-io/rule-rulex/internal/utils/topic"
+	"github.com/tkeel-io/rule-util/ruleql/pkg/ruleql"
 	"github.com/tkeel-io/rule-util/stream"
-	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 )
 
 // slot
@@ -75,7 +75,8 @@ func (s *slot) Invoke(ctx context.Context, vCtx ruleql.Context, message stream.P
 	tasks := s.match(topic)
 	for _, t := range tasks {
 		nm := message.Copy().(stream.PublishMessage)
-		//nm := message
+		// nm := message
+		nm.SetDomain(t.UserID())
 		if err := t.Invoke(ctx, vCtx, nm); err != nil {
 			s.logger.For(ctx).Error(
 				"0.invoke2 msg",
