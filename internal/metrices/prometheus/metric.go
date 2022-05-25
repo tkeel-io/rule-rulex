@@ -154,9 +154,8 @@ func Init(c *conf.Config) {
 		}, resSyncLabels),
 
 		ruleExecute: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "rulex",
-			Name:      "rule_execute_num",
-			Help:      "count for rule execute .",
+			Name: "rule_execute_num",
+			Help: "count for rule execute .",
 		}, ruleExecuteLabels),
 	}
 
