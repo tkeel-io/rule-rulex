@@ -22,7 +22,7 @@ import (
 	ck "github.com/tkeel-io/rule-rulex/pkg/go-clickhouse"
 	plugin "github.com/tkeel-io/rule-rulex/pkg/sink/plugin/clickhouse"
 	xutils "github.com/tkeel-io/rule-rulex/pkg/sink/utils"
-	//ck "github.com/ClickHouse/clickhouse-go"
+	// ck "github.com/ClickHouse/clickhouse-go"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 )
 
 type Option struct {
-	//Addrs     string `json:"addrs,omitempty"`
+	// Addrs     string `json:"addrs,omitempty"`
 	Urls   []string         `json:"urls"`
 	DbName string           `json:"dbName,omitempty"`
 	Table  string           `json:"table,omitempty"`
@@ -53,13 +53,14 @@ type Data struct {
 }
 
 type Fields struct {
-	fields   map[string]string //global fields
+	fields   map[string]string // global fields
 	fieldArr []*field
-	nodes    map[string]*node //metric nodes
+	nodes    map[string]*node // metric nodes
 }
+
 type node struct {
 	nodeName string
-	fields   map[string]string //metric nodes fields
+	fields   map[string]string // metric nodes fields
 	fieldArr []*field
 }
 
@@ -75,13 +76,13 @@ type field struct {
 	value string `json:"urls"`
 }
 
-//chronus plugin
+// chronus plugin
 type chronus struct {
 	entityType, entityID string
 	balance              plugin.LoadBalance
-	//db     *sqlx.DB
+	// db     *sqlx.DB
 	option *Option
-	fields []*field //映射关系
+	fields []*field // 映射关系
 
 	ch    chan types.Message
 	wg    *sync.WaitGroup
@@ -153,7 +154,7 @@ func (a *chronus) setup() (err error) {
 		})
 	}
 
-	//a.db = db
+	// a.db = db
 	a.balance = plugin.NewLoadBalanceRandom(servers)
 
 	return
@@ -168,13 +169,13 @@ func (a *chronus) initTask() (err error) {
 	a.queue, err = xutils.NewBatchSink("chronus", &sopt,
 		func(msgs []types.Message) (err error) {
 			log.Info("chronus NewBatchSink", logf.Any("msgs", len(msgs)))
-			//t := time.Now()
+			// t := time.Now()
 			if err := a.Insert(sink.NewContext(context.Background()), msgs); err != nil {
 				a.onError(err)
 			}
 			utils.Log.Bg().Info("insert message",
 				logf.Int("len(msgs)", len(msgs)))
-			//fmt.Println("len(msgs)", len(msgs), time.Now().Sub(t), t, string(msgs[0].Data()))
+			// fmt.Println("len(msgs)", len(msgs), time.Now().Sub(t), t, string(msgs[0].Data()))
 			return nil
 		})
 	return err
@@ -188,12 +189,13 @@ func (a *chronus) Invoke(ctx types.ActionContent, message types.Message) (err er
 		}
 		a.inited.Store(true)
 	}
-	a.queue.Send(ctx.Context(), message)
-	return
+	// TODO
+	// a.queue.Send(ctx.Context(), message)
+	return a.Insert(sink.NewContext(context.Background()), []types.Message{message})
 }
 
 func (a *chronus) Insert(ctx types.ActionContent, messages []types.Message) (err error) {
-	//log.Info("chronus Insert ", logf.Any("messages", messages))
+	// log.Info("chronus Insert ", logf.Any("messages", messages))
 	var (
 		tx *sql.Tx
 	)
@@ -202,9 +204,9 @@ func (a *chronus) Insert(ctx types.ActionContent, messages []types.Message) (err
 		data := new(execNode)
 		tqlNode := ruleql.NewJSONContext(string(message.Data()))
 
-		//fmt.Println(string(message.Data()))
+		// fmt.Println(string(message.Data()))
 		utils.Log.Bg().Info("Invoke", logf.Any("messages", string(message.Data())))
-		//jsonCtx := utils.NewJSONContext(string(message.Data()))
+		// jsonCtx := utils.NewJSONContext(string(message.Data()))
 
 		data.fields = make([]string, 0, len(a.fields))
 		data.args = make([]interface{}, 0, len(a.fields))
@@ -350,7 +352,7 @@ func (a *chronus) parseOption(metadata map[string]string) (*Option, error) {
 			return nil, errors.New(fmt.Sprintf("field(%s) types is empty", key))
 		}
 		if field.Value == "" {
-			//return nil, errors.New(fmt.Sprintf("field(%s) types is empty", key))
+			// return nil, errors.New(fmt.Sprintf("field(%s) types is empty", key))
 		}
 	}
 	return &opt, nil

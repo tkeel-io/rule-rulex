@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/tkeel-io/rule-rulex/internal/types"
 	"github.com/tkeel-io/rule-rulex/internal/utils"
@@ -15,9 +18,6 @@ import (
 	"go.uber.org/atomic"
 
 	//"github.com/tkeel-io/rule-rulex/internal/utils"
-	"strings"
-	"sync"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/tkeel-io/rule-rulex/pkg/sink"
@@ -34,7 +34,7 @@ const (
 )
 
 type Option struct {
-	//Addrs     string `json:"addrs,omitempty"`
+	// Addrs     string `json:"addrs,omitempty"`
 	Urls   []string         `json:"urls"`
 	DbName string           `json:"dbName,omitempty"`
 	Table  string           `json:"table,omitempty"`
@@ -54,13 +54,14 @@ type Data struct {
 }
 
 type Fields struct {
-	fields   map[string]string //global fields
+	fields   map[string]string // global fields
 	fieldArr []*field
-	nodes    map[string]*node //metric nodes
+	nodes    map[string]*node // metric nodes
 }
+
 type node struct {
 	nodeName string
-	fields   map[string]string //metric nodes fields
+	fields   map[string]string // metric nodes fields
 	fieldArr []*field
 }
 
@@ -76,13 +77,13 @@ type field struct {
 	value string `json:"urls"`
 }
 
-//mysql plugin
+// mysql plugin
 type mysql struct {
 	entityType, entityID string
 	balance              plugin.LoadBalance
-	//db     *sqlx.DB
+	// db     *sqlx.DB
 	option        *Option
-	fields        []*field //映射关系
+	fields        []*field // 映射关系
 	actionContent types.ActionContent
 	ch            chan types.Message
 	wg            *sync.WaitGroup
@@ -145,6 +146,7 @@ func (a *mysql) setup() (err error) {
 	}
 	return
 }
+
 func (a *mysql) initTask() (err error) {
 	sopt := xutils.SinkBatchOptions{
 		MaxBatching:             max_run_pool,
@@ -154,7 +156,7 @@ func (a *mysql) initTask() (err error) {
 
 	a.queue, err = xutils.NewBatchSink("mysql", &sopt,
 		func(msgs []types.Message) (err error) {
-			//t := time.Now()
+			// t := time.Now()
 			if err := a.Insert(sink.NewContext(context.Background()), msgs); err != nil {
 				a.onError(err)
 			}
@@ -164,6 +166,7 @@ func (a *mysql) initTask() (err error) {
 		})
 	return err
 }
+
 func (a *mysql) Invoke(ctx types.ActionContent, message types.Message) (err error) {
 	log.Info("mysql Invoke ", logf.Any("message", message))
 	if !a.inited.Load() {
@@ -172,14 +175,13 @@ func (a *mysql) Invoke(ctx types.ActionContent, message types.Message) (err erro
 		}
 		a.inited.Store(true)
 	}
-	a.queue.Send(ctx.Context(), message)
-	return
+	// a.queue.Send(ctx.Context(), message)
+
+	return a.Insert(sink.NewContext(context.Background()), []types.Message{message})
 }
 
 func (a *mysql) Insert(ctx types.ActionContent, messages []types.Message) (err error) {
-	var (
-		tx *sql.Tx
-	)
+	var tx *sql.Tx
 	server := a.balance.Select([]*sqlx.DB{})
 	if server == nil {
 		return fmt.Errorf("get database failed, can't insert")
@@ -263,6 +265,7 @@ func (a *mysql) Insert(ctx types.ActionContent, messages []types.Message) (err e
 	}
 	return nil
 }
+
 func fillExecNode(val interface{}, typ string, data *execNode, fieldName string) error {
 	var err error
 	lowerType := strings.ToLower(typ)
@@ -324,7 +327,7 @@ func (a *mysql) parseOption(metadata map[string]string) (*Option, error) {
 			return nil, errors.New(fmt.Sprintf("field(%s) types is empty", key))
 		}
 		if field.Value == "" {
-			//return nil, errors.New(fmt.Sprintf("field(%s) types is empty", key))
+			// return nil, errors.New(fmt.Sprintf("field(%s) types is empty", key))
 		}
 	}
 	return &opt, nil
@@ -357,6 +360,7 @@ func (a *mysql) genSql(row *execNode) string {
 		strings.Join(row.fields, ","),
 		stmts)
 }
+
 func (a *mysql) onError(err error) {
 	a.actionContent.Nack(err)
 }

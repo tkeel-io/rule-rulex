@@ -223,12 +223,14 @@ func (this *Task) invoke(ctx context.Context, state interface{}) error {
 	if len(failures) > 0 {
 		errMsg := msg.Copy().(metapb.PublishMessage)
 		errorMessage := ErrorMessage{
-			Topic:     m.Topic(),
-			RuleName:  this.value.Id,
-			MessageId: msg.PacketIdentifier(),
-			Failures:  failures,
+			Topic:                 m.Topic(),
+			RuleName:              this.value.Id,
+			MessageId:             msg.PacketIdentifier(),
+			Failures:              failures,
+			Base64OriginalPayload: errMsg.Data(),
 		}
-		bty, err := json.Marshal(errorMessage)
+		// TODO
+		bty, err := json.Marshal(map[string]interface{}{"data": errorMessage})
 		if err != nil {
 			utils.Log.For(ctx).Error(
 				"4.1 Marshal failures msg error",
