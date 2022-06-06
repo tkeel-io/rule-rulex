@@ -41,7 +41,7 @@ type RulexMetrics struct {
 	// 资源（rule,route,subscription）同步速度（单位：byte）
 	resourceSyncSent *prometheus.GaugeVec
 	// 规则执行次数
-	ruleExecute *prometheus.GaugeVec
+	ruleExecute *prometheus.CounterVec
 }
 
 func GetIns() *RulexMetrics {
@@ -153,7 +153,7 @@ func Init(c *conf.Config) {
 			Help:      "count for sync resource(bytes).",
 		}, resSyncLabels),
 
-		ruleExecute: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		ruleExecute: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "rule_execute_num",
 			Help: "count for rule execute .",
 		}, ruleExecuteLabels),
