@@ -11,8 +11,8 @@ var (
 	}
 
 	ruleExecuteLabels = []string{
-		"tenant_id", // 租户id
-		"status",    // 规则执行状态
+		"tenant", // 租户id
+		"status", // 规则执行状态
 	}
 )
 
