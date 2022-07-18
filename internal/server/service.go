@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -268,6 +269,26 @@ func SubscribeID2Topic(subscribeID string) (topic string) {
 	return
 }
 
+type RawData struct {
+	Id          string     `json:"id"`
+	Owner       string     `json:"owner"`
+	Properties  Properties `json:"properties"`
+	SubscribeId string     `json:"subscribe_id"`
+}
+
+type Properties struct {
+	RawData PropertiesRawData `json:"rawData"`
+}
+
+type PropertiesRawData struct {
+	Id     string      `json:"id"`
+	Mark   string      `json:"mark"`
+	Path   string      `json:"path"`
+	Ts     int64       `json:"ts"`
+	Type   string      `json:"type"`
+	Values interface{} `json:"values"`
+}
+
 func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 	//	metrics.MsgMetrics.Mark(1)
 	//	msgCtx := xmetrics.NewMsgContext()
@@ -386,11 +407,58 @@ func (s *RuleService) handleMessage(ctx context.Context, m interface{}) error {
 	//	metrics.Inc(metrics.MetricName(userID, entityID, metrics.MtcMessageUp))
 	//}
 
-	vCtx := functions.NewMessageContext(message.(xstream.PublishMessage))
+	nm, ok := message.Copy().(xstream.PublishMessage)
+	if ok {
+		var rawData = new(RawData)
+		data := nm.Data()
+		if err := json.Unmarshal(data, rawData); err != nil {
+			s.logger.For(ctx).Error(
+				"0.invoke msg: json.Unmarshal err",
+				logf.Message(nm),
+				logf.Error(err),
+			)
+		}
+		if values, ok := rawData.Properties.RawData.Values.(string); ok {
+			if originVal, err := base64.StdEncoding.DecodeString(values); err != nil {
+				s.logger.For(ctx).Error(
+					"0.invoke msg: base64.StdEncoding.DecodeString err",
+					logf.Message(nm),
+					logf.Error(err),
+				)
+			} else {
+				var val interface{}
+				if err = json.Unmarshal(originVal, &val); err != nil {
+					s.logger.For(ctx).Error(
+						"0.invoke msg: json.Unmarshal(originVal, &val) err",
+						logf.Message(nm),
+						logf.Error(err),
+					)
+				} else {
+					rawData.Properties.RawData.Values = val
+					if rawDataNew, err := json.Marshal(rawData); err != nil {
+						s.logger.For(ctx).Error(
+							"0.invoke msg: json.Marshal(rawData) err",
+							logf.Message(nm),
+							logf.Error(err),
+						)
+					} else {
+						nm.SetData(rawDataNew)
+					}
+				}
+			}
+		}
+	} else {
+		s.logger.For(ctx).Error(
+			"0.invoke msg: invalid msg format err, expected xstream.PublishMessage",
+			logf.Message(nm),
+		)
+		return nil
+	}
+	vCtx := functions.NewMessageContext(nm)
 	globalSlot := s.resourceManager.Slot("*")
-	globalSlot.Invoke(ctx, vCtx, message)
+	globalSlot.Invoke(ctx, vCtx, nm)
 	userSlot := s.resourceManager.Slot(userID)
-	userSlot.Invoke(ctx, vCtx, message)
+	userSlot.Invoke(ctx, vCtx, nm)
 	return nil
 }
 
