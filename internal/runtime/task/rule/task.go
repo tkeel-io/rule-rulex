@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tkeel-io/rule-rulex/internal/runtime/rule/stream/functions"
 	"strconv"
 
 	metrics "github.com/tkeel-io/rule-rulex/internal/metrices"
@@ -137,6 +138,29 @@ func (this *Task) invoke(ctx context.Context, state interface{}) error {
 
 	if !ok {
 		return errors.New("Trigger Callback Type Error")
+	}
+	evalCtx := functions.NewMessageContext(msg)
+	if filterFlag := this.ruleql.Filter(ctx, evalCtx, msg); !filterFlag {
+		utils.Log.For(ctx).Error(
+			"ruleql.Filter",
+			logf.Message(msg),
+			logf.String("RuleID", this.ruleId),
+			logf.String("RuleQL", this.String()),
+			logf.String("MsgTopic", msg.Topic()),
+			logf.ByteString("MsgData", msg.Data()),
+		)
+		return nil
+	}
+	if err := this.ruleql.Invoke(ctx, evalCtx, msg); err != nil {
+		utils.Log.For(ctx).Error(
+			"ruleql.Invoke error",
+			logf.Message(msg),
+			logf.String("RuleID", this.ruleId),
+			logf.String("RuleQL", this.String()),
+			logf.String("MsgTopic", msg.Topic()),
+			logf.ByteString("MsgData", msg.Data()),
+			logf.Error(err),
+		)
 	}
 	/*
 		evalCtx := functions.NewMessageContext(msg.(stream.PublishMessage))
