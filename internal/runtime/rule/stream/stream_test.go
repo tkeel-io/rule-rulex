@@ -4,18 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tkeel-io/rule-rulex/internal/runtime/rule/stream/functions"
 	"github.com/tkeel-io/rule-util/metadata/v1"
 	"github.com/tkeel-io/rule-util/pkg/errors"
 	"github.com/tkeel-io/rule-util/pkg/pprof"
 	"github.com/tkeel-io/rule-util/ruleql/pkg/ruleql"
-	"github.com/tkeel-io/rule-rulex/internal/runtime/rule/stream/functions"
 	"github.com/tkeel-io/rule-util/stream"
 	"testing"
 	"time"
 )
 
 var (
-	PubMessage   = MessageFromString(`{"matedata":{"x-stream-domain":"mdmp-test","x-stream-entity":"iotd-mock001","x-stream-method":"Publish","x-stream-qos":"0","x-stream-topic":"/mqtt-mock/benchmark/0","x-stream-version":"1.0"},"time":{},"raw_data":"MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw=="}`)
+	PubMessage   = MessageFromString(`{"matedata":{"x-stream-domain":"mdmp-test","x-stream-entity":"iotd-mock001","x-stream-method":"Publish","x-stream-qos":"0","x-stream-topic":"/mqtt-mock/benchmark/0","x-stream-version":"1.0", "x-stream-packet-id": "id-mock", "x-rule-body": "rule-body-mock", "x-rule-id": "rule-id-mock"},"time":{},"raw_data":"MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw=="}`)
 	SubMessage   = MessageFromString(`{"matedata":{"x-stream-domain":"mdmp-test","x-stream-entity":"iotd-mock001","x-stream-method":"Subscribe","x-stream-version":"1.0"},"time":{},"raw_data":"eyJ0b3BpY19maWx0ZXJzIjpbeyJ0b3BpY19uYW1lIjoiLyMiLCJxb3MiOjB9XX0="}`)
 	UnSubMessage = MessageFromString(`{"matedata":{"x-stream-domain":"mdmp-test","x-stream-entity":"iotd-mock001","x-stream-method":"Unsubscribe","x-stream-version":"1.0"},"time":{},"raw_data":"eyJ0b3BpY19maWx0ZXJzIjpbeyJ0b3BpY19uYW1lIjoiLyMiLCJxb3MiOjB9XX0="}`)
 	jsonRaw1     = `{"id":"f2d5b10e-d946-4022-81fa-bbf0ac0cf4c0","version":"v1.0.0","type":"thing.property.post","metadata":{"entityId":"iotd-a98b6b52-6caa-456c-80cc-bb7613c4a787","modelId":"iott-v9zy5nvTz0","sourceId":["iotd-b3493702-3f41-4e1f-97ee-a8dadcaed17e"],"epochTime":1597302
@@ -175,6 +175,48 @@ var (
 			where
 				color = 'red' and
 				temperature > 49`
+
+	sql5 = `select id, owner, subscribe_id, topic, ruleId() as rule_id, deviceid() as device_id,
+            updateTime() as update_time,
+            properties.rawData.values.counter01 as counter02 from rulex/rule-16
+			where owner = 'abVM4Nh9' and properties.rawData.ts = 1657959026659`
+
+	sql6  = `select id, updateTime() as update_time from rulex/rule-16`
+	sql7  = `select id, startswith(id, 'iotd') as is_startswith from rulex/rule-16`
+	sql8  = `select id, newuuid() as uuid from rulex/rule-16`
+	sql9  = `select id, rand(0, 1) as rand_val from rulex/rule-16`
+	sql10 = `select id, tan(10) as tan_val from rulex/rule-16`
+	sql11 = `select id, upper(id) as upper_val from rulex/rule-16`
+	sql12 = `select id, asin(0.5) as asin_val from rulex/rule-16`
+	sql13 = `select id, concat(id, '-test') as concat_val from rulex/rule-16`
+	sql14 = `select id, sin(0.5) as sin_val from rulex/rule-16`
+	sql15 = `select id, tanh(0.5) as tanh_val from rulex/rule-16`
+	sql16 = `select id, deviceid() as device_id from rulex/rule-16`
+	sql17 = `select id, timeFormat(properties.rawData.ts/1000, '2006-01-02') as time from rulex/rule-16`
+	sql18 = `select id, floor(0.56) as floor_val from rulex/rule-16`
+	sql19 = `select id, lower('LOWER') as lower_val from rulex/rule-16`
+	sql20 = `select id, sinh(0.5) as sinh_val from rulex/rule-16`
+	sql21 = `select id, topic() as topic, topic(1) as topic2, topic(2) as topic3, topic(3) as topic4 from rulex/rule-16`
+	sql22 = `select id, messageId() as message_id from rulex/rule-16`
+	sql23 = `select id, userid() as userid from rulex/rule-16`
+	sql24 = `select id, exp(2) as exp_val from rulex/rule-16`
+	sql25 = `select id, power(2, 3) as power_val from rulex/rule-16`
+	sql26 = `select id, ruleBody() as rule_body from rulex/rule-16`
+	sql27 = `select id, timestamp() as timestamp, timestamp('2006-01-02') as time_format from rulex/rule-16`
+	sql28 = `select id, abs(-1) as abs_val  from rulex/rule-16`
+	sql29 = `select id, acos(0.5) as acos_val from rulex/rule-16`
+	sql30 = `select id, cosh(0.5) as cosh_val from rulex/rule-16`
+	sql31 = `select id, deviceName() as device_name from rulex/rule-16`
+	sql32 = `select id, mod(10, 3) as mod_val from rulex/rule-16`
+	sql33 = `select id, substring('123', 1) as substring_val from rulex/rule-16`
+	sql34 = `select id, ruleId() as rule_id from rulex/rule-16`
+	sql35 = `select id, endswith(id, 'd8617ee8ad9e') as is_endswith from rulex/rule-16`
+	sql36 = `select id, replace(id, 'iotd', 'iotd-mock') as replace_val from rulex/rule-16`
+	sql37 = `select id, str(properties) as str_val from rulex/rule-16`
+	sql38 = `select id, deviceId() as device_id from rulex/rule-16`
+	sql39 = `select id, cos(0.5) as cos_val from rulex/rule-16`
+	sql40 = `select id, log(100) as log_val from rulex/rule-16`
+	sql41 = `select id, to_base64('{"counter": 10}') as log_val from rulex/rule-16`
 )
 
 func MessageFromString(s string) stream.Message {
@@ -402,4 +444,177 @@ func Test_k(t *testing.T) {
 
 	fmt.Println(a == c)
 	fmt.Println(b == c)
+}
+
+func commonQlTest(sqlStr string) {
+	ctx := context.Background()
+	s, _ := New(ctx, &v1.RuleQL{Body: []byte(sqlStr)}, func(ctx context.Context, state interface{}) error {
+		if state == nil {
+			fmt.Println("Error", nil)
+			return nil
+		}
+		msg, ok := state.(v1.PublishMessage)
+		if !ok {
+			return errors.New("Trigger Callback Type Error")
+		}
+		evalCtx := functions.NewMessageContext(msg.Copy().(stream.PublishMessage))
+		expr, _ := ruleql.Parse(sqlStr)
+		fmt.Println("Output1", ruleql.EvalFilter(evalCtx, expr))
+		fmt.Println("Output2", ruleql.EvalRuleQL(evalCtx, expr))
+		return nil
+	})
+	jsonMsg := `{"topic": "rulex/rule-16", "id":"iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e","owner":"abVM4Nh9","properties":{"rawData":{"id":"iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e","mark":"upstream","path":"iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e/v1/devices/me/telemetry","ts":1657959026659,"type":"telemetry","values":{"counter01":12}}},"subscribe_id":"iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e_16_mdmp-topic"}`
+	msg := PubMessage.Copy().SetData([]byte(jsonMsg))
+	vCtx := functions.NewMessageContext(msg.(stream.PublishMessage))
+	if err := s.Exce(ctx, vCtx, msg); err != nil {
+		fmt.Println("Invoke0", err)
+	}
+}
+
+func TestStreamQl(t *testing.T) {
+	commonQlTest(sql5)
+}
+
+func TestUpdateTime(t *testing.T) {
+	commonQlTest(sql6)
+}
+
+func TestStartswith(t *testing.T) {
+	commonQlTest(sql7)
+}
+
+func TestNewUUID(t *testing.T) {
+	commonQlTest(sql8)
+}
+
+func TestRand(t *testing.T) {
+	commonQlTest(sql9)
+}
+
+func TestTan(t *testing.T) {
+	commonQlTest(sql10)
+}
+
+func TestUpper(t *testing.T) {
+	commonQlTest(sql11)
+}
+
+func TestAsin(t *testing.T) {
+	commonQlTest(sql12)
+}
+
+func TestConcat(t *testing.T) {
+	commonQlTest(sql13)
+}
+
+func TestSin(t *testing.T) {
+	commonQlTest(sql14)
+}
+
+func TestTanh(t *testing.T) {
+	commonQlTest(sql15)
+}
+
+func TestDeviceid(t *testing.T) {
+	commonQlTest(sql16)
+}
+
+func TestTimeFormat(t *testing.T) {
+	commonQlTest(sql17)
+}
+
+func TestFloor(t *testing.T) {
+	commonQlTest(sql18)
+}
+
+func TestLower(t *testing.T) {
+	commonQlTest(sql19)
+}
+
+func TestSinh(t *testing.T) {
+	commonQlTest(sql20)
+}
+
+func TestTopic(t *testing.T) {
+	commonQlTest(sql21)
+}
+
+func TestMessageId(t *testing.T) {
+	commonQlTest(sql22)
+}
+
+func TestUserid(t *testing.T) {
+	commonQlTest(sql23)
+}
+
+func TestExp(t *testing.T) {
+	commonQlTest(sql24)
+}
+
+func TestPower(t *testing.T) {
+	commonQlTest(sql25)
+}
+
+func TestRuleBody(t *testing.T) {
+	commonQlTest(sql26)
+}
+
+func TestTimestamp(t *testing.T) {
+	commonQlTest(sql27)
+}
+
+func TestAbs(t *testing.T) {
+	commonQlTest(sql28)
+}
+
+func TestAcos(t *testing.T) {
+	commonQlTest(sql29)
+}
+
+func TestCosh(t *testing.T) {
+	commonQlTest(sql30)
+}
+
+func TestDeviceName(t *testing.T) {
+	commonQlTest(sql31)
+}
+
+func TestMod(t *testing.T) {
+	commonQlTest(sql32)
+}
+
+func TestSubString(t *testing.T) {
+	commonQlTest(sql33)
+}
+
+func TestRuleID(t *testing.T) {
+	commonQlTest(sql34)
+}
+
+func TestEndswith(t *testing.T) {
+	commonQlTest(sql35)
+}
+
+func TestReplace(t *testing.T) {
+	commonQlTest(sql36)
+}
+
+func TestStr(t *testing.T) {
+	commonQlTest(sql37)
+}
+
+func TestDeviceId(t *testing.T) {
+	commonQlTest(sql38)
+}
+
+func TestCos(t *testing.T) {
+	commonQlTest(sql39)
+}
+
+func TestLog(t *testing.T) {
+	commonQlTest(sql40)
+}
+
+func TestBase64(t *testing.T) {
+	commonQlTest(sql41)
 }
