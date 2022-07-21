@@ -23,11 +23,12 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/smartystreets/assertions v1.2.0
+	github.com/smartystreets/goconvey v1.7.2
 	github.com/smartystreets/gunit v1.4.3
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	github.com/tkeel-io/rule-util v0.0.0-20220328140104-48b9cedb7c43
+	github.com/tkeel-io/rule-util v0.0.0-20220718025054-12325b5dd8c9
 	github.com/uber-go/atomic v1.4.0
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	github.com/valyala/fastrand v1.0.0
@@ -56,6 +57,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/influxdata/influxdb-client-go/v2 v2.9.1 // indirect
@@ -65,6 +67,7 @@ require (
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.2 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
+	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mwitkow/go-proto-validators v0.3.2 // indirect
