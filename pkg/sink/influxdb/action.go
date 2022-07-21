@@ -53,6 +53,10 @@ type Option struct {
 func (i *Influx) Setup(ctx types.ActionContent, metadata map[string]string) error {
 	i.metadata = metadata
 	i.modelName = "keel"
+	err := i.parseOption()
+	if err != nil {
+		return err
+	}
 	return i.setup()
 }
 
@@ -67,6 +71,9 @@ func (i *Influx) parseOption() (err error) {
 		return errors.New(fmt.Sprintf("option unmarshal error(%s)", err.Error()))
 	}
 	i.tags = opt.Tags
+	if i.tags == nil {
+		i.tags = map[string]string{}
+	}
 	if len(opt.Urls) != 1 {
 		return errors.New("url error")
 	}
@@ -78,17 +85,20 @@ func (i *Influx) parseOption() (err error) {
 	items2 := strings.SplitN(items1[0], ":", 2)
 	if len(items2) != 2 {
 		return errors.New("url error")
+	}
 	i.cfg = &InfluxConfig{}
 	i.cfg.Token = items2[1]
 
 	items3 := strings.SplitN(items1[1], "/", 2)
 	if len(items3) != 2 {
 		return errors.New("url error")
+	}
 	i.cfg.URL = "http://" + items3[0]
 
 	items4 := strings.SplitN(items3[1], "?", 2)
 	if len(items4) != 2 {
 		return errors.New("url error")
+	}
 	i.cfg.Org = items4[0]
 	i.cfg.Bucket = items4[1]
 	return
@@ -131,7 +141,7 @@ func (i *Influx) makeDataString(data []byte) []string {
 		return nil
 	}
 	valueString, ts := makeKVSFloat(msg.Properties.Telemetry)
-
+	i.tags["id"] = msg.Id
 	ss := fmt.Sprintf("%s,%s %s %d", i.modelName, makeKVString(i.tags), valueString, ts)
 	return []string{ss}
 }
