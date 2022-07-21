@@ -19,21 +19,21 @@ package rulex
 import (
 	"github.com/tkeel-io/rule-rulex/pkg/sink/bucket"
 	"github.com/tkeel-io/rule-rulex/pkg/sink/chronus"
+	"github.com/tkeel-io/rule-rulex/pkg/sink/influxdb"
 	"github.com/tkeel-io/rule-rulex/pkg/sink/kafka"
 	"github.com/tkeel-io/rule-rulex/pkg/sink/mysql"
 	"github.com/tkeel-io/rule-rulex/pkg/sink/postgresql"
 	"github.com/tkeel-io/rule-rulex/pkg/sink/redis"
 	"github.com/tkeel-io/rule-rulex/pkg/sink/republish"
-
-
 )
 
 var (
-	TypRepublish = republish.EntityType
-	TypKafka     = kafka.EntityType
-	TypChronus   = chronus.EntityType
-	TypBucket    = bucket.EntityType
-	TypMysql = mysql.EntityType
+	TypRepublish  = republish.EntityType
+	TypKafka      = kafka.EntityType
+	TypChronus    = chronus.EntityType
+	TypBucket     = bucket.EntityType
+	TypMysql      = mysql.EntityType
 	TypPostgresql = postgresql.EntityType
-	TypRedis = redis.EntityType
+	TypRedis      = redis.EntityType
+	TypInfluxdb   = influxdb.EntityType
 )
