@@ -58,7 +58,6 @@ $ make docker-auto
 select id, 
        owner, 
        subscribe_id, 
-       topic,
        properties.rawData.values.counter01 as counter02 
 from rulex/rule-16
 where owner = 'abVM4Nh9' and 
@@ -69,7 +68,6 @@ where owner = 'abVM4Nh9' and
     "id": "iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e",
     "owner": "abVM4Nh9",
     "subscribe_id": "iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e_16_mdmp-topic",
-    "topic": "rulex/rule-16",
     "counter02": 12
 }
 ```
