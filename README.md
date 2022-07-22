@@ -134,7 +134,7 @@ select id, asin(0.5) as asin_val from rulex/rule-16
 ```
 ```
 # output
-{"id":"iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e","upper_val":0.523599}
+{"id":"iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e","asin_val":0.523599}
 ```
 8. concat
 ```
@@ -152,7 +152,7 @@ select id, sin(0.5) as sin_val from rulex/rule-16
 ```
 ```
 # output
-{"id":"iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e","concat_val":0.479426}
+{"id":"iotd-6497d1e2-c2c6-4aa5-a72f-d8617ee8ad9e","sin_val":0.479426}
 ```
 10. tanh
 ```
